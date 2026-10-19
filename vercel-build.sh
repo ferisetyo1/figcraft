@@ -25,17 +25,30 @@ rustc +1.95.0 --print target-libdir --target wasm32-unknown-unknown
 echo "=== Install Trunk ==="
 cargo +1.95.0 install --locked trunk
 
-echo "=== Install Font ==="
-if [ ! -d ../craft-fonts ]; then
-  git clone --depth 1 \
-    https://github.com/storytold/craft-fonts.git \
-    ../craft-fonts
+echo "=== Setup craft-fonts ==="
+
+FONT_DIR="$(cd .. && pwd)/craft-fonts"
+
+if [ ! -d "$FONT_DIR/.git" ]; then
+  git clone https://github.com/storytold/craft-fonts.git "$FONT_DIR"
 fi
 
-export CRAFT_FONTS_DIR="$(cd ../craft-fonts && pwd)"
+git -C "$FONT_DIR" fetch origin
+git -C "$FONT_DIR" checkout 4391305
 
-# Bersihkan crate teks agar font baru di-embed
+export CRAFT_FONTS_DIR="$FONT_DIR"
+export CRAFT_FONTS_REQUIRED=1
+
+echo "=== Verify font manifests ==="
+test -f "$CRAFT_FONTS_DIR/fonts/manifest.txt"
+test -f "$CRAFT_FONTS_DIR/fonts/latin-manifest.txt"
+
+echo "Font directory: $CRAFT_FONTS_DIR"
+git -C "$CRAFT_FONTS_DIR" rev-parse --short HEAD
+
+echo "=== Rebuild text crate ==="
 cargo +1.95.0 clean -p figcraft-text
+
 
 echo "=== Build FigCraft Web ==="
 cd apps/figcraft-web
